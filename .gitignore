@@ -1,2 +1,5 @@
-.waffle_backend.idea
-.waffle_backend.example_surveyresult.tsv
+#idea
+waffle_backend/.idea/
+
+#tsv
+waffle_backend/example_surveyresult.tsv

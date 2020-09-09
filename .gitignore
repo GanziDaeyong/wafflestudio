@@ -4,6 +4,7 @@
 
 example_surveyresult.tsv
 
+__pycache__
 
 # compiled output
 /dist

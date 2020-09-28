@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'survey.apps.SurveyConfig',
     'user.apps.UserConfig',
+    'seminar.apps.SeminarConfig',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 REST_FRAMEWORK = {
@@ -60,11 +63,13 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     )
 }
-
+"""
 if DEBUG_TOOLBAR:
     INSTALLED_APPS.append('debug_toolbar')
     MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
     INTERNAL_IPS = ('127.0.0.1',)
+"""
+INTERNAL_IPS = ('127.0.0.1',)
 
 ROOT_URLCONF = 'waffle_backend.urls'
 

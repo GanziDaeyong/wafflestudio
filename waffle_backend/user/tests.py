@@ -126,6 +126,7 @@ class PostUserTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         data = response.json()
+
         self.assertIn("id", data)
         self.assertEqual(data["username"], "participant")
         self.assertEqual(data["email"], "bdv111@snu.ac.kr")
@@ -136,6 +137,7 @@ class PostUserTestCase(TestCase):
         self.assertIn("token", data)
 
         participant = data["participant"]
+
         self.assertIsNotNone(participant)
         self.assertIn("id", participant)
         self.assertEqual(participant["university"], "서울대학교")
@@ -274,6 +276,7 @@ class PutUserMeTestCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=self.instructor_token
         )
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -285,10 +288,11 @@ class PutUserMeTestCase(TestCase):
         self.assertIn("last_login", data)
         self.assertIn("date_joined", data)
         self.assertNotIn("token", data)
-
         self.assertIsNone(data["participant"])
 
         instructor = data["instructor"]
+        print(data)
+        print(instructor)
         self.assertIsNotNone(instructor)
         self.assertIn("id", instructor)
         self.assertEqual(instructor["company"], "매스프레소")

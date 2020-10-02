@@ -31,10 +31,12 @@ class ParticipantsProfileSerializer(serializers.ModelSerializer):
         except:
             pass
         if sw == 0:
-            return None
+            return []
 
         rstlist = []
+
         rst = UserSeminar.objects.filter(user_id=user.id)
+
         for query in rst:
             rstlist.append(query.seminar)
         return MiniSeminarSerializerForUser(rstlist, context=self.context, many=True).data
@@ -56,8 +58,11 @@ class InstructorProfileSerializer(serializers.ModelSerializer):
         from seminar.mini_serializers import MiniSeminarSerializerForUserForInstructor
         user = self.context['user']
         self.context['user'] = user
+        rst = UserSeminar.objects.filter(user_id=user.id).filter(role='instructor') # 얘는 뭐가됐던 일단 가져옴. 없으면 빈 리스트 에러발생X
+        if rst.count() == 0:
+            return None
+
         rstlist = []
-        rst = UserSeminar.objects.filter(user_id=user.id).filter(role='instructor')
         for query in rst:
             rstlist.append(query.seminar)
         return MiniSeminarSerializerForUserForInstructor(rstlist, context=self.context, many=True).data

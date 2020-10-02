@@ -23,7 +23,7 @@ class UserViewSet(viewsets.GenericViewSet):
     def create(self, request):
 
         serializer_profile = UserSerializer
-        serializer_profile.validate_for_profile(request.user, request.data)  # 프로필 생성을 위한 데이터들이 validate한지 체크
+        serializer_profile.validate_for_profile(request.user, request.data, if_update=0)  # 프로필 생성을 위한 데이터들이 validate한지 체크
 
         serializer = self.get_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -71,12 +71,13 @@ class UserViewSet(viewsets.GenericViewSet):
         user = request.user
 
         serializer_profile = UserSerializer
-        serializer_profile.validate_for_profile(request.user, request.data)  # 유저의 프로필정보 변경을 위한 validation check
+        serializer_profile.validate_for_profile(request.user, request.data, if_update=1)  # 유저의 프로필정보 변경을 위한 validation check
 
         serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)  # 유저의 기본정보 변경을 위한 validation check
         serializer.update(serializer.validated_data)
         return Response(serializer.data)
+
 
 #POST /api/v1/user/participant/
     @action(detail=False, methods=['POST'])

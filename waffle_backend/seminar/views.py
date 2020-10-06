@@ -6,6 +6,7 @@ from seminar.serializers import SeminarSerializer
 from seminar.mini_serializers import MiniSeminarSerializer
 from seminar.seminar_models import Seminar
 from seminar.relation_models import UserSeminar
+import re
 
 
 class SeminarViewSet(viewsets.GenericViewSet):
@@ -27,7 +28,16 @@ class SeminarViewSet(viewsets.GenericViewSet):
             return Response({"error": "Only authorized instructors can create a seminar."},
                             status=status.HTTP_403_FORBIDDEN)
 
+        if not request.data.get('time'):
+            return Response({"required data : name / capacity / count / time"}, status=status.HTTP_400_BAD_REQUEST)
+        else :
+            time = request.data.get('time')
+            p = re.compile('..:..')
+            if len(time) > 5 or not p.match(str(time)):
+                return Response({"enter right form of time ex: 12:30 "}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
+
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -100,4 +110,5 @@ class SeminarViewSet(viewsets.GenericViewSet):
             return Response({"error": "Can't find the proper seminar."}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.add(pk, seminar)
+
         return Response(SeminarSerializer(seminar).data)

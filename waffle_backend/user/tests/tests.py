@@ -7,6 +7,10 @@ import json
 from seminar.serializers import InstructorProfile, ParticipantsProfile
 
 
+########################################################################################################################
+########################################################################################################################
+# POST /api/v1/user/
+
 class PostUserTestCase(TestCase):
     client = Client()
 
@@ -106,7 +110,6 @@ class PostUserTestCase(TestCase):
             content_type='application/json'
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
         user_count = User.objects.count()
         self.assertEqual(user_count, 1)
 
@@ -153,6 +156,10 @@ class PostUserTestCase(TestCase):
         instructor_count = InstructorProfile.objects.count()
         self.assertEqual(instructor_count, 0)
 
+
+########################################################################################################################
+########################################################################################################################
+# PUT /api/v1/user/me/
 
 class PutUserMeTestCase(TestCase):
     client = Client()
@@ -291,8 +298,7 @@ class PutUserMeTestCase(TestCase):
         self.assertIsNone(data["participant"])
 
         instructor = data["instructor"]
-        print(data)
-        print(instructor)
+
         self.assertIsNotNone(instructor)
         self.assertIn("id", instructor)
         self.assertEqual(instructor["company"], "매스프레소")
@@ -301,3 +307,7 @@ class PutUserMeTestCase(TestCase):
 
         instructor_user = User.objects.get(username='inst123')
         self.assertEqual(instructor_user.email, 'bdv111@naver.com')
+
+####################################################################################################
+
+

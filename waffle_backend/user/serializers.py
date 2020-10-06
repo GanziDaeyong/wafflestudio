@@ -79,6 +79,13 @@ class UserSerializer(serializers.ModelSerializer):
             university = for_profile_data.get('university')
         else:
             university = ""
+
+        if for_profile_data.get('accepted'):
+            if for_profile_data.get('accepted') == "false" or "False":
+                accepted = False
+        else:
+            accepted = True
+
         if for_profile_data.get('company'):
             company = for_profile_data.get('company')
         else:
@@ -89,7 +96,7 @@ class UserSerializer(serializers.ModelSerializer):
             year = None
 
         if for_profile_data.get('role') == ('participant'):
-            ParticipantsProfile.objects.create(user=user, university=university)
+            ParticipantsProfile.objects.create(user=user, university=university, accepted=accepted)
 
         elif for_profile_data.get('role') == ('instructor'):
             InstructorProfile.objects.create(user=user, company=company, year=year)

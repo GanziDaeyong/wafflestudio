@@ -84,6 +84,6 @@ class UserViewSet(viewsets.GenericViewSet):
     def participant(self, request):
         user = request.user
         serializer = UserSerializer
-        serializer.validate_for_profile(user, request.data)
+        serializer.validate_for_profile(user, request.data, if_update=1)
         serializer.new_role(user, request)
-        return Response(self.get_serializer(user).data)
+        return Response(self.get_serializer(user).data, status=status.HTTP_201_CREATED)

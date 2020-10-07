@@ -13,7 +13,7 @@ class POSTSeminarSeminarIdUserCase(TestCase):
     client = Client()
 
     def setUp(self):
-        response=self.client.post(
+        response = self.client.post(
             '/api/v1/user/',
             json.dumps({
                 "username": "ParticipantDaeyong",
@@ -46,7 +46,6 @@ class POSTSeminarSeminarIdUserCase(TestCase):
         )
 
         self.participant_token2 = 'Token ' + Token.objects.get(user__username='ParticipantDaeyongDaeyong').key
-
 
         self.client.post(
             '/api/v1/user/',
@@ -310,6 +309,7 @@ class POSTSeminarSeminarIdUserCase(TestCase):
         self.assertEqual(dict["is_active"], True)
         self.assertEqual(dict["dropped_at"], None)
 
+
 #################################################################################################
 #################################################################################################
 
@@ -318,7 +318,7 @@ class DeleteSeminarSeminarIdUserCase(TestCase):
     client = Client()
 
     def setUp(self):
-        response=self.client.post(
+        response = self.client.post(
             '/api/v1/user/',
             json.dumps({
                 "username": "ParticipantDaeyong",
@@ -379,7 +379,6 @@ class DeleteSeminarSeminarIdUserCase(TestCase):
         data = response.json()
         self.seminar_id = data["id"]
 
-
         seminar_id = self.seminar_id
         address = '/api/v1/seminar/' + str(seminar_id) + '/user/'
         self.client.post(
@@ -391,20 +390,21 @@ class DeleteSeminarSeminarIdUserCase(TestCase):
             HTTP_AUTHORIZATION=self.participant_token1
         )
 
-    def test_delete_seminar_seminarid_user_if_stranger(self): # 가입하지 않은 사람이 드랍요청하는 경우
+    def test_delete_seminar_seminarid_user_if_stranger(self):  # 가입하지 않은 사람이 드랍요청하는 경우
         seminar_id = self.seminar_id
         address = '/api/v1/seminar/' + str(seminar_id) + '/user/'
-        response=self.client.delete(
+        response = self.client.delete(
             address,
             content_type='application/json',
             HTTP_AUTHORIZATION=self.participant_token2,
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    def test_delete_seminar_seminarid_user_if_stranger(self): # 진행자가 드랍하는 경우
+
+    def test_delete_seminar_seminarid_user_if_stranger(self):  # 진행자가 드랍하는 경우
         seminar_id = self.seminar_id
         address = '/api/v1/seminar/' + str(seminar_id) + '/user/'
-        response=self.client.delete(
+        response = self.client.delete(
             address,
             content_type='application/json',
             HTTP_AUTHORIZATION=self.instructor_token1,
@@ -412,7 +412,7 @@ class DeleteSeminarSeminarIdUserCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_delete_seminar_seminarid_user_if_already_deleted(self): # 드랍한 사람이 또 드랍하는 경우
+    def test_delete_seminar_seminarid_user_if_already_deleted(self):  # 드랍한 사람이 또 드랍하는 경우
         seminar_id = self.seminar_id
         address = '/api/v1/seminar/' + str(seminar_id) + '/user/'
         self.client.delete(
@@ -420,7 +420,7 @@ class DeleteSeminarSeminarIdUserCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=self.participant_token1,
         )
-        response=self.client.delete(
+        response = self.client.delete(
             address,
             content_type='application/json',
             HTTP_AUTHORIZATION=self.participant_token1,
@@ -430,14 +430,14 @@ class DeleteSeminarSeminarIdUserCase(TestCase):
     def test_delete_seminar_seminarid_user_success(self):
         seminar_id = self.seminar_id
         address = '/api/v1/seminar/' + str(seminar_id) + '/user/'
-        response=self.client.delete(
+        response = self.client.delete(
             address,
             content_type='application/json',
             HTTP_AUTHORIZATION=self.participant_token1,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        data=response.json()
+        data = response.json()
         for dicts in data["participants"]:
             if dicts["id"] == self.part_id:
                 dict = dicts
@@ -449,4 +449,3 @@ class DeleteSeminarSeminarIdUserCase(TestCase):
         self.assertIn("joined_at", dict)
         self.assertEqual(dict["is_active"], False)
         self.assertIn("dropped_at", dict)
-

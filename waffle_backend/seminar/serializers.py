@@ -3,7 +3,7 @@ from seminar.seminar_models import Seminar
 from seminar.profile_models import ParticipantsProfile, InstructorProfile
 from user.mini_serializers import MiniUserSerializer, MiniUserSerializerForParticipants
 from seminar.relation_models import UserSeminar
-import datetime
+from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 
 
@@ -70,7 +70,7 @@ class InstructorProfileSerializer(serializers.ModelSerializer):
 
 class SeminarSerializer(serializers.ModelSerializer):
     participants = serializers.SerializerMethodField()
-    instructor = serializers.SerializerMethodField()
+    instructors = serializers.SerializerMethodField()
 
     class Meta:
         model = Seminar
@@ -81,7 +81,7 @@ class SeminarSerializer(serializers.ModelSerializer):
             'count',
             'time',
             'online',
-            'instructor',
+            'instructors',
             'participants',
         )
 
@@ -91,6 +91,7 @@ class SeminarSerializer(serializers.ModelSerializer):
         capacity = data.get('capacity')
         count = data.get('count')
         time = data.get('time')
+        online = data.get('online')
 
         if not (name and capacity and count and time):
             raise serializers.ValidationError("required data : name / capacity / count / time")
@@ -117,7 +118,9 @@ class SeminarSerializer(serializers.ModelSerializer):
         return seminar
 
     def update(self, pk, data):
+
         seminar = Seminar.objects.get(id=pk)
+
         if data.get('name'):
             seminar.name = data['name']
         if data.get('count'):
@@ -130,7 +133,7 @@ class SeminarSerializer(serializers.ModelSerializer):
             seminar.capacity = data['capacity']
         if data.get('time'):
             seminar.time = data['time']
-        if data.get('online'):
+        if data.get('online') != None:
             seminar.online = data['online']
 
         seminar.save()
@@ -187,16 +190,16 @@ class SeminarSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("you are not the participant of this seminar")
 
         if profile.role == 'instructor':
-                raise PermissionDenied()
+            raise PermissionDenied()
 
         if profile.is_active == False:
             raise serializers.ValidationError("you already dropped from this seminar")
 
         profile.is_active = False
-        profile.dropped_at = datetime.datetime.now()
+        profile.dropped_at = timezone.now()
         profile.save()
 
-    def get_instructor(self, seminar):
+    def get_instructors(self, seminar):
         try:
             seminar.id  # (처음생성하는 경우. )
         except:

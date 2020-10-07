@@ -13,7 +13,7 @@ class MiniSeminarSerializer(SeminarSerializer): # For seminar search
         fields = (
             'id',
             'name',
-            'instructor',
+            'instructors',
             'participant_count'
         )
 

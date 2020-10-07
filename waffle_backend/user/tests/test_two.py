@@ -336,7 +336,7 @@ class PostSeminarCase(TestCase):
         self.assertEqual(data["online"], True)
         self.assertEqual(data["participants"], [])
 
-        instructor = data["instructor"][0]
+        instructor = data["instructors"][0]
         self.assertIsNotNone(instructor)
         self.assertIn("id", instructor)
         self.assertEqual(instructor["username"], "InstructorDaeyong")

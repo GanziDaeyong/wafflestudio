@@ -54,7 +54,7 @@ class SeminarViewSet(viewsets.GenericViewSet):
             profile = UserSeminar.objects.filter(seminar_id=pk).get(user_id=user.id)
             if profile.role != 'instructor':
                 return Response({"error": "only authorized seminar instructors can access."},
-                                status=status.HTTP_403_FORBIDDEN)  ##메세지 추가.
+                                status=status.HTTP_403_FORBIDDEN)
         except:
             return Response({"error": "only authorized seminar instructors can access."},
                             status=status.HTTP_403_FORBIDDEN)
@@ -62,7 +62,7 @@ class SeminarViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(user, data=data, partial=True)
         # get_serializer는 데이터를 받아서 serializer해준다.
         serializer.is_valid(raise_exception=True)
-        seminar = serializer.update(pk, data)
+        seminar = serializer.update(pk, serializer.validated_data)
 
         return Response(SeminarSerializer(seminar).data)
 

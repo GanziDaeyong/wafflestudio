@@ -35,7 +35,7 @@ class ParticipantsProfileSerializer(serializers.ModelSerializer):
 
         rstlist = []
 
-        rst = UserSeminar.objects.filter(user_id=user.id)
+        rst = UserSeminar.objects.filter(user_id=user.id).filter(role="participant")
 
         for query in rst:
             rstlist.append(query.seminar)

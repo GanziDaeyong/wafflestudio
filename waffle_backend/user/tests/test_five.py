@@ -167,7 +167,8 @@ class PUTSeminarSeminarIdCase(TestCase):
         self.assertEqual(instructor["last_name"], "JeongThree")
         self.assertIn("joined_at", instructor)
 
-
+##############################################################################################
+##############################################################################################
 class PUTSeminarCase(TestCase):
     client = Client()
 

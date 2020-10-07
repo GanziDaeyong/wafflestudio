@@ -31,17 +31,20 @@ class PutUserLoginCase(TestCase):
             }),
             content_type='application/json'
         )
-
-    def test_put_user_login(self):
-        response = self.client.put(
-            '/api/v1/user/login/',
+        self.client.post(
+            '/api/v1/user/',
             json.dumps({
-                "username": "ParticipantDaeyong",
-                "password": "password"
+                "username": "InstructorDaeyong",
+                "password": "password",
+                "first_name": "Daeyong",
+                "last_name": "Jeong",
+                "email": "JeongDaeyong@snu.ac.kr",
+                "role": "instructor",
+                "company": "samsung",
+                "year": "15"
             }),
-            content_type='application/json'  # authorization 필요없는 동작.
+            content_type='application/json'
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_put_user_login_incorrect(self):
         response = self.client.put(
@@ -53,6 +56,63 @@ class PutUserLoginCase(TestCase):
             content_type='application/json'
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_put_user_login_participant(self):
+        response = self.client.put(
+            '/api/v1/user/login/',
+            json.dumps({
+                "username": "ParticipantDaeyong",
+                "password": "password"
+            }),
+            content_type='application/json'  # authorization 필요없는 동작.
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+
+        self.assertIn("id", data)
+        self.assertEqual(data["username"], "ParticipantDaeyong")
+        self.assertEqual(data["email"], "JeongDaeyong@snu.ac.kr")
+        self.assertEqual(data["first_name"], "Daeyong")
+        self.assertEqual(data["last_name"], "Jeong")
+        self.assertIn("last_login", data)
+        self.assertIn("date_joined", data)
+        self.assertIsNotNone(data["participant"])
+        self.assertIsNone(data["instructor"])
+        self.assertIn("token", data)
+        participant = data["participant"]
+        self.assertIn("id", participant)
+        self.assertEqual(participant["university"], "서울대학교")
+        self.assertTrue(participant["accepted"])
+        self.assertEqual(participant["seminars"], [])
+
+    def test_put_user_login_instructor(self):
+        response = self.client.put(
+            '/api/v1/user/login/',
+            json.dumps({
+                "username": "InstructorDaeyong",
+                "password": "password"
+            }),
+            content_type='application/json'  # authorization 필요없는 동작.
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertIn("id", data)
+        self.assertEqual(data["username"], "InstructorDaeyong")
+        self.assertEqual(data["email"], "JeongDaeyong@snu.ac.kr")
+        self.assertEqual(data["first_name"], "Daeyong")
+        self.assertEqual(data["last_name"], "Jeong")
+        self.assertIn("last_login", data)
+        self.assertIn("date_joined", data)
+        self.assertIsNone(data["participant"])
+        self.assertIsNotNone(data["instructor"])
+        self.assertIn("token", data)
+        instructor = data["instructor"]
+        self.assertIn("id", instructor)
+        self.assertEqual(instructor["company"], "samsung")
+        self.assertTrue(instructor["year"], 15)
+        self.assertIsNone(instructor["charge"])
 
 
 ###################################################################################################

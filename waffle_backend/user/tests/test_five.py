@@ -1,7 +1,13 @@
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 import json
+
+from seminar.serializers import InstructorProfile, ParticipantsProfile
+from seminar.serializers import Seminar
+import datetime
+from seminar.relation_models import UserSeminar
 
 """
 GET /api/v1/seminar/{seminar_id}/
@@ -115,6 +121,25 @@ class PUTSeminarSeminarIdCase(TestCase):
             HTTP_AUTHORIZATION=self.instructor_token2,
         )
 
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 4)
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 2)
+        instructor_count = InstructorProfile.objects.count()
+        self.assertEqual(instructor_count, 2)
+        seminar_count = Seminar.objects.count()
+        self.assertEqual(seminar_count, 1)
+        seminar_check = Seminar.objects.get(id=seminar_id)
+        self.assertEqual(seminar_check.name, "backend")
+        self.assertEqual(seminar_check.capacity, 10)
+        self.assertEqual(seminar_check.count, 5)
+        self.assertEqual(seminar_check.time, datetime.time(13, 30))
+        self.assertTrue(seminar_check.online)
+        seminar_participant_count = UserSeminar.objects.filter(seminar_id=seminar_id).filter(role="participant").count()
+        self.assertEqual(seminar_participant_count, 2)
+        seminar_instructor_count = UserSeminar.objects.filter(seminar_id=seminar_id).filter(role="instructor").count()
+        self.assertEqual(seminar_instructor_count, 2)
+
     def test_get_seminar_seminarid(self):
         seminar_id = self.seminar_id
         address = '/api/v1/seminar/' + str(seminar_id) + '/'
@@ -167,9 +192,10 @@ class PUTSeminarSeminarIdCase(TestCase):
         self.assertEqual(instructor["last_name"], "JeongThree")
         self.assertIn("joined_at", instructor)
 
+
 ##############################################################################################
 ##############################################################################################
-class PUTSeminarCase(TestCase):
+class GetSeminarCase(TestCase):
     client = Client()
 
     def setUp(self):
@@ -346,6 +372,27 @@ class PUTSeminarCase(TestCase):
             HTTP_AUTHORIZATION=self.participant_token2,
         )
 
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 5)
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 2)
+        instructor_count = InstructorProfile.objects.count()
+        self.assertEqual(instructor_count, 3)
+        seminar_count = Seminar.objects.count()
+        self.assertEqual(seminar_count, 3)
+        backend_seminar_check = Seminar.objects.get(id=self.backend_seminar_id)
+        self.assertEqual(backend_seminar_check.name, "backend")
+        backend_seminar_user_count = UserSeminar.objects.filter(seminar_id=self.backend_seminar_id).count()
+        self.assertEqual(backend_seminar_user_count, 4)
+        frontend_seminar_check = Seminar.objects.get(id=self.frontend_seminar_id)
+        self.assertEqual(frontend_seminar_check.name, "frontend")
+        frontend_seminar_user_count = UserSeminar.objects.filter(seminar_id=self.frontend_seminar_id).count()
+        self.assertEqual(frontend_seminar_user_count, 2)
+        android_seminar_check = Seminar.objects.get(id=self.android_seminar_id)
+        self.assertEqual(android_seminar_check.name, "android")
+        android_seminar_user_count = UserSeminar.objects.filter(seminar_id=self.android_seminar_id).count()
+        self.assertEqual(android_seminar_user_count, 3)
+
         # 백엔드(진행자 2 참여자 1(원래 2였다가 하나 드랍))
         # 프론트엔드(진행자 1 참여자 1)
         # 안드로이드(진행자 1 참여자 2)
@@ -373,7 +420,7 @@ class PUTSeminarCase(TestCase):
         # backend
         self.assertIn("id", backend)
         self.assertEqual(backend["name"], "backend")
-        self.assertEqual(backend["participant_count"], 1) # 드랍자 한명 미포함
+        self.assertEqual(backend["participant_count"], 1)  # 드랍자 한명 미포함
         instructor = backend["instructors"]
         self.assertEqual(len(instructor), 2)  # 다 들어있는지 수 확인
         for user in instructor:
@@ -401,7 +448,7 @@ class PUTSeminarCase(TestCase):
         self.assertEqual(frontend["participant_count"], 1)
         instructor = frontend["instructors"]
         self.assertEqual(len(instructor), 1)  # 다 들어있는지 수 확인
-        instructor = instructor[0] # 한명이니까 바로 인덱스로 호출
+        instructor = instructor[0]  # 한명이니까 바로 인덱스로 호출
         self.assertIn("id", instructor)
         self.assertEqual(instructor["username"], "InstructorDaeyong")
         self.assertEqual(instructor["email"], "JeongDaeyong@snu.ac.kr")
@@ -422,4 +469,3 @@ class PUTSeminarCase(TestCase):
         self.assertEqual(instructor["first_name"], "DaeyongThree")
         self.assertEqual(instructor["last_name"], "JeongThree")
         self.assertIn("joined_at", instructor)
-

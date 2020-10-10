@@ -1,8 +1,13 @@
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 import json
 
+from seminar.serializers import InstructorProfile, ParticipantsProfile
+from seminar.serializers import Seminar
+import datetime
+from seminar.relation_models import UserSeminar
 """
 GET /api/v1/user/me/
 GET /api/v1/user/id/
@@ -13,7 +18,7 @@ class GetUserMeCase(TestCase):
     client = Client()
 
     def setUp(self):
-        self.client.post(
+        response = self.client.post(
             '/api/v1/user/',
             json.dumps({
                 "username": "ParticipantDaeyong",
@@ -27,6 +32,8 @@ class GetUserMeCase(TestCase):
             content_type='application/json'
         )
         self.participant_token1 = 'Token ' + Token.objects.get(user__username='ParticipantDaeyong').key
+        data = response.json()
+        self.part_id = data["id"]
 
         self.client.post(
             '/api/v1/user/',
@@ -56,7 +63,7 @@ class GetUserMeCase(TestCase):
         )
         self.instructor_token1 = 'Token ' + Token.objects.get(user__username='InstructorDaeyong').key
 
-        self.client.post(
+        response=self.client.post(
             '/api/v1/user/',
             json.dumps({
                 "username": "InstructorDaeyongDaeyong",
@@ -71,6 +78,8 @@ class GetUserMeCase(TestCase):
             content_type='application/json'
         )
         self.instructor_token2 = 'Token ' + Token.objects.get(user__username='InstructorDaeyongDaeyong').key
+        data = response.json()
+        self.inst_id = data["id"]
 
         self.client.post(
             '/api/v1/user/participant/',
@@ -95,7 +104,7 @@ class GetUserMeCase(TestCase):
         data = response.json()
         self.backend_seminar_id = data["id"]
 
-        self.client.post(
+        response=self.client.post(
             '/api/v1/seminar/',
             json.dumps({
                 "name": "frontend",
@@ -106,6 +115,8 @@ class GetUserMeCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=self.instructor_token2
         )
+        data=response.json()
+        self.frontend_id=data["id"]
 
         id = self.backend_seminar_id
         address = '/api/v1/seminar/' + str(id) + '/user/'
@@ -130,6 +141,32 @@ class GetUserMeCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=self.instructor_token2,
         )
+
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 4)
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 3)  # 진행자 한명이 참여자 프로필 만들어서 2+1
+        instructor_count = InstructorProfile.objects.count()
+        self.assertEqual(instructor_count, 2)
+        seminar_count = Seminar.objects.count()
+        self.assertEqual(seminar_count, 2)
+
+        part_check = ParticipantsProfile.objects.get(user_id=self.part_id)
+        self.assertEqual(part_check.university, "Kaist")
+        profile_compare_to_above = User.objects.get(id=self.part_id)
+        seminar_compare_to_above = UserSeminar.objects.filter(seminar_id=self.backend_seminar_id).get(
+            user_id=self.part_id).user
+        self.assertEqual(part_check.user, profile_compare_to_above)
+        self.assertEqual(part_check.user, seminar_compare_to_above)
+        inst_check = InstructorProfile.objects.get(user_id=self.inst_id)
+        self.assertEqual(inst_check.company, "waffleStudio")
+
+        profile_compare_to_above = User.objects.get(id=self.inst_id)
+        seminar_compare_to_above = UserSeminar.objects.filter(seminar_id=self.frontend_id).get(
+            user_id=self.inst_id).user
+        self.assertEqual(inst_check.user, profile_compare_to_above)
+        self.assertEqual(inst_check.user, seminar_compare_to_above)
+
 
     ##############################################################################
 
@@ -305,7 +342,7 @@ class GetUserIdCase(TestCase):
         data = response.json()
         self.backend_seminar_id = data["id"]
 
-        self.client.post(
+        response=self.client.post(
             '/api/v1/seminar/',
             json.dumps({
                 "name": "frontend",
@@ -316,6 +353,8 @@ class GetUserIdCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=self.instructor_token2
         )
+        data=response.json()
+        self.frontend_id = data["id"]
 
         id = self.backend_seminar_id
         address = '/api/v1/seminar/' + str(id) + '/user/'
@@ -341,9 +380,34 @@ class GetUserIdCase(TestCase):
             HTTP_AUTHORIZATION=self.instructor_token2,
         )
 
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 4)
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 3)  # 진행자 한명이 참여자 프로필 만들어서 2+1
+        instructor_count = InstructorProfile.objects.count()
+        self.assertEqual(instructor_count, 2)
+        seminar_count = Seminar.objects.count()
+        self.assertEqual(seminar_count, 2)
+
+        part_check = ParticipantsProfile.objects.get(user_id=self.participant_id)
+        self.assertEqual(part_check.university, "Kaist")
+        profile_compare_to_above = User.objects.get(id=self.participant_id)
+        seminar_compare_to_above = UserSeminar.objects.filter(seminar_id=self.backend_seminar_id).get(
+            user_id=self.participant_id).user
+        self.assertEqual(part_check.user, profile_compare_to_above)
+        self.assertEqual(part_check.user, seminar_compare_to_above)
+        inst_check = InstructorProfile.objects.get(user_id=self.instructor_id)
+        self.assertEqual(inst_check.company, "waffleStudio")
+
+        profile_compare_to_above = User.objects.get(id=self.instructor_id)
+        seminar_compare_to_above = UserSeminar.objects.filter(seminar_id=self.frontend_id).get(
+            user_id=self.instructor_id).user
+        self.assertEqual(inst_check.user, profile_compare_to_above)
+        self.assertEqual(inst_check.user, seminar_compare_to_above)
+
     ##############################################################################
 
-    def test_get_user_me_participant(self):
+    def test_get_user_me_participant_id(self):
         id = self.participant_id
         address = '/api/v1/user/' + str(id) + "/"
         response = self.client.get(
@@ -377,7 +441,7 @@ class GetUserIdCase(TestCase):
         self.assertIn("joined_at", seminar)
         self.assertIn("dropped_at", seminar)
 
-    def test_get_user_me_instructor(self):
+    def test_get_user_me_instructor_id(self):
         id = self.instructor_id
         address = '/api/v1/user/' + str(id) + "/"
         response = self.client.get(

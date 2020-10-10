@@ -1,12 +1,16 @@
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 import json
 
+from seminar.serializers import InstructorProfile, ParticipantsProfile
+from seminar.serializers import Seminar
+import datetime
+from seminar.relation_models import UserSeminar
 """
 PUT /api/v1/seminar/{seminar_id}/
 """
-
 
 class PUTSeminarSeminarIdCase(TestCase):
     client = Client()
@@ -100,6 +104,15 @@ class PUTSeminarSeminarIdCase(TestCase):
             content_type='application/json',
             HTTP_AUTHORIZATION=self.participant_token2,
         )
+        # 기본 setup 체크
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 4)
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 2)
+        instructor_count = InstructorProfile.objects.count()
+        self.assertEqual(instructor_count, 2)
+        seminar_count = Seminar.objects.count()
+        self.assertEqual(seminar_count, 1)
 
     def test_put_seminar_seminarid_if_participant(self):  # 참여자가 바꾸려는 경우
         seminar_id = self.seminar_id
@@ -181,7 +194,7 @@ class PUTSeminarSeminarIdCase(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_put_seminar_seminarid_success(self):  # 참여자 수보다 capacity가 적은 경우
+    def test_put_seminar_seminarid_success(self):
         seminar_id = self.seminar_id
         address = '/api/v1/seminar/' + str(seminar_id) + '/'
         response = self.client.put(
@@ -198,13 +211,20 @@ class PUTSeminarSeminarIdCase(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        seminar_check = Seminar.objects.get(id=seminar_id)
+        self.assertEqual(seminar_check.name, "BackendIsFun")
+        self.assertEqual(seminar_check.capacity, 10)
+        self.assertEqual(seminar_check.count, 10)
+        self.assertEqual(seminar_check.time, datetime.time(20, 45))
+        self.assertFalse(seminar_check.online)
+
         data = response.json()
         self.assertIn("id", data)
         self.assertEqual(data["name"], "BackendIsFun")
         self.assertEqual(data["capacity"], 10)
         self.assertEqual(data["count"], 10)
         self.assertEqual(data["time"], "20:45:00")
-        self.assertEqual(data["online"], False)
+        self.assertFalse(data["online"])
         self.assertGreaterEqual(len(data["participants"]), 2)  # setup에서 두명 가입했음
 
         instructor = data["instructors"][0]

@@ -1,8 +1,11 @@
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 import json
 
+from seminar.serializers import InstructorProfile, ParticipantsProfile
+from seminar.serializers import Seminar
 """
 PUT /api/v1/user/login/
 POST /api/v1/user/participant/
@@ -46,6 +49,14 @@ class PutUserLoginCase(TestCase):
             content_type='application/json'
         )
 
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 2)
+
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 1)
+        instructor_count = InstructorProfile.objects.count()
+        self.assertEqual(instructor_count, 1)
+
     def test_put_user_login_incorrect(self):
         response = self.client.put(
             '/api/v1/user/login/',
@@ -69,9 +80,12 @@ class PutUserLoginCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
+        participant_check = User.objects.get(username="ParticipantDaeyong")
+        self.assertEqual(participant_check.first_name, "Daeyong")
 
         self.assertIn("id", data)
         self.assertEqual(data["username"], "ParticipantDaeyong")
+
         self.assertEqual(data["email"], "JeongDaeyong@snu.ac.kr")
         self.assertEqual(data["first_name"], "Daeyong")
         self.assertEqual(data["last_name"], "Jeong")
@@ -97,6 +111,8 @@ class PutUserLoginCase(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        instructor_check = User.objects.get(username="InstructorDaeyong")
+        self.assertEqual(instructor_check.last_name, "Jeong")
         data = response.json()
         self.assertIn("id", data)
         self.assertEqual(data["username"], "InstructorDaeyong")
@@ -121,7 +137,6 @@ class PutUserLoginCase(TestCase):
 
 
 class PostUserParticipantCase(TestCase):
-    # 조건: 아이디 / 비밀번호
     client = Client()
 
     def setUp(self):
@@ -153,6 +168,10 @@ class PostUserParticipantCase(TestCase):
         )
         self.participant_token = 'Token ' + Token.objects.get(user__username='ParticipantDaeyong').key
 
+
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 2)
+
     def test_post_user_participant_incorrect(self):  # 이미 participant는 participant를 신청할 수 없다. (400)
 
         response = self.client.post(
@@ -176,6 +195,15 @@ class PostUserParticipantCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         data = response.json()
+
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 2)
+
+        instructor_check = User.objects.get(username="InstructorDaeyong")
+        self.assertEqual(instructor_check.last_name, "Jeong")
+        instructor_participant_check = ParticipantsProfile.objects.get(user=instructor_check)
+        self.assertEqual(instructor_participant_check.university, "Korea University")
+
         self.assertIn("id", data)
         self.assertEqual(data["username"], "InstructorDaeyong")
         self.assertEqual(data["email"], "JeongDaeyong@snu.ac.kr")
@@ -207,6 +235,15 @@ class PostUserParticipantCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         data = response.json()
+
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 2)
+
+        instructor_check = User.objects.get(username="InstructorDaeyong")
+        self.assertEqual(instructor_check.email, "JeongDaeyong@snu.ac.kr")
+        instructor_participant_check = ParticipantsProfile.objects.get(user=instructor_check)
+        self.assertEqual(instructor_participant_check.university, "")
+
         self.assertIn("id", data)
         self.assertEqual(data["username"], "InstructorDaeyong")
         self.assertEqual(data["email"], "JeongDaeyong@snu.ac.kr")
@@ -265,6 +302,14 @@ class PostSeminarCase(TestCase):
             content_type='application/json'
         )
         self.participant_token = 'Token ' + Token.objects.get(user__username='ParticipantDaeyong').key
+
+        user_count = User.objects.count()
+        self.assertEqual(user_count, 2)
+
+        participant_count = ParticipantsProfile.objects.count()
+        self.assertEqual(participant_count, 1)
+        instructor_count = InstructorProfile.objects.count()
+        self.assertEqual(instructor_count, 1)
 
     def test_post_seminar_if_participant_makes_it(self):  # 참여자가 만드는 경우
         response = self.client.post(
@@ -386,6 +431,11 @@ class PostSeminarCase(TestCase):
             HTTP_AUTHORIZATION=self.instructor_token
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        seminar_count = Seminar.objects.count()
+        self.assertEqual(seminar_count, 1)
+        seminar_check = Seminar.objects.get(name="backend")
+        self.assertEqual(seminar_check.capacity, 30)
 
         data = response.json()
         self.assertIn("id", data)

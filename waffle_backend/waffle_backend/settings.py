@@ -106,6 +106,16 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": { #redis cache를 쓰겠다. - redis에서는 6379가 베이스이다.
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/3",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators

@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -30,7 +31,7 @@ class SeminarViewSet(viewsets.GenericViewSet):
 
         if not request.data.get('time'):
             return Response({"required data : name / capacity / count / time"}, status=status.HTTP_400_BAD_REQUEST)
-        else :
+        else:
             time = request.data.get('time')
             p = re.compile('..:..')
             if len(time) > 5 or not p.match(str(time)):
@@ -77,14 +78,36 @@ class SeminarViewSet(viewsets.GenericViewSet):
 
         return Response(SeminarSerializer(seminar).data)
 
+    # 파라미터의 order여부, 또는 그 값에 따라 존재하는 두 경우 모두를 각각 캐싱한다.
+    # cache get -> db에 캐시 키가 있는지 없는지를 확인한다.
+    # cache set -> db에서 캐시를 가져오겠다.
+
     def list(self, request, pk=None):
-        queryset = self.queryset.order_by('-created_at')
+
         if request.GET.get('name', ''):
             queryset = self.queryset.filter(name__contains=request.GET.get('name')).order_by('-created_at')
-        if request.GET.get('order', '') == 'earlist':
-            queryset = self.queryset.order_by('created_at')
-
-        return Response(MiniSeminarSerializer(queryset, many=True).data)
+            data = MiniSeminarSerializer(queryset, many=True).data
+        elif request.GET.get('order', '') == "earliest":
+            cache_key = "seminar-list_earliest"
+            data = cache.get(cache_key)
+            if not data:  # 없는 상황이 캐시 미스이다.
+                print("no cache1")
+                queryset = self.queryset.order_by('created_at')
+                data = MiniSeminarSerializer(queryset, many=True).data
+                cache.set(cache_key, data, timeout=180)
+            else:
+                print("yes cache1")
+        else:
+            cache_key = "seminar-list_without_param"
+            data = cache.get(cache_key)
+            if not data:
+                print("no cache2")
+                queryset = self.queryset.order_by('-created_at')
+                data = MiniSeminarSerializer(queryset, many=True).data
+                cache.set(cache_key, data, timeout=180)
+            else:
+                print("yes cache2")
+        return Response(data)
 
     # DELETE / api / v1 / seminar / {seminar_id} / user /
     def delete(self, request, pk=id):

@@ -90,23 +90,21 @@ class SeminarViewSet(viewsets.GenericViewSet):
         elif request.GET.get('order', '') == "earliest":
             cache_key = "seminar-list_earliest"
             data = cache.get(cache_key)
-            if not data:  # 없는 상황이 캐시 미스이다.
-                print("no cache1")
+            if data is None:  # 없는 상황이 캐시 미스이다.
                 queryset = self.queryset.order_by('created_at')
                 data = MiniSeminarSerializer(queryset, many=True).data
                 cache.set(cache_key, data, timeout=180)
-            else:
-                print("yes cache1")
         else:
             cache_key = "seminar-list_without_param"
             data = cache.get(cache_key)
+<<<<<<< HEAD
             if not data:
-                print("no cache2")
+=======
+            if data is None:
+>>>>>>> ef6468d56038b228753d3774be8af66f2aefd281
                 queryset = self.queryset.order_by('-created_at')
                 data = MiniSeminarSerializer(queryset, many=True).data
                 cache.set(cache_key, data, timeout=180)
-            else:
-                print("yes cache2")
         return Response(data)
 
     # DELETE / api / v1 / seminar / {seminar_id} / user /

@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from seminar.profile_models import ParticipantsProfile, InstructorProfile
+from seminar.relation_models import UserSeminar
 
 
 class UserSerializer(serializers.ModelSerializer):

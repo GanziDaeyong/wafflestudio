@@ -31,6 +31,7 @@ ALLOWED_HOSTS = [
         '15.164.98.32',
         'localhost',
         '127.0.0.1',
+        'www.waffle-backend-ganzidaeyong.shop',
         ]
 
 

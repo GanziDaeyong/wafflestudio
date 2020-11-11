@@ -97,11 +97,7 @@ class SeminarViewSet(viewsets.GenericViewSet):
         else:
             cache_key = "seminar-list_without_param"
             data = cache.get(cache_key)
-<<<<<<< HEAD
-            if not data:
-=======
             if data is None:
->>>>>>> ef6468d56038b228753d3774be8af66f2aefd281
                 queryset = self.queryset.order_by('-created_at')
                 data = MiniSeminarSerializer(queryset, many=True).data
                 cache.set(cache_key, data, timeout=180)

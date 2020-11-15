@@ -32,9 +32,8 @@ ALLOWED_HOSTS = [
         'localhost',
         '127.0.0.1',
         'www.waffle-backend-ganzidaeyong.shop',
+        'ec2-15-164-98-32.ap-northeast-2.compute.amazonaws.com',
         ]
-
-
 # Application definition
 
 INSTALLED_APPS = [

@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from seminar.profile_models import ParticipantsProfile, InstructorProfile
+from seminar.relation_models import UserSeminar
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(required=False)
     last_login = serializers.DateTimeField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
-    participants = serializers.SerializerMethodField()
+    participant = serializers.SerializerMethodField()
     instructor = serializers.SerializerMethodField()
 
     class Meta:
@@ -26,7 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
             'last_name',
             'last_login',
             'date_joined',
-            'participants',
+            'participant',
             'instructor',
         )
 
@@ -37,6 +38,15 @@ class UserSerializer(serializers.ModelSerializer):
 
         first_name = data.get('first_name')
         last_name = data.get('last_name')
+        email = data.get('email')
+        role = data.get('role')
+        username = data.get('username')
+        if not username and not email and not role:
+            raise serializers.ValidationError("Username/Email/Role are necessary fields.")
+
+        email = str(email)
+        if email.find("@") < 0:
+            raise serializers.ValidationError("Email should include @")
 
         if bool(first_name) ^ bool(last_name):
             raise serializers.ValidationError("First name and last name should appear together.")
@@ -45,17 +55,17 @@ class UserSerializer(serializers.ModelSerializer):
 
         return data
 
-    def validate_for_profile(self, data):  # 유저의 참여자 / 진행자 프로필 생성을 위한 정보를 validate
+    def validate_for_profile(self, data, if_update):  # 유저의 참여자 / 진행자 프로필 생성을 위한 정보를 validate
 
         university = data.get('university')
         company = data.get('company')
         year = data.get('year')
         role = data.get('role')
 
-        if not (role == 'participant' or role == 'instructor'):  # API#4 회원가입 제한조건
+        if if_update == 0 and role != 'participant' and role != 'instructor':  # API#4 회원가입 제한조건
             raise serializers.ValidationError("Role should be participant or instructor.")
-        if (university and not university.isalpha()) or (company and not (company.isalpha())):
-            raise serializers.ValidationError("Name of institute should not include number.")
+        #if (university and not university.isalpha()) or (company and not (company.isalpha())):
+        #    raise serializers.ValidationError("Name of institute should not include number.")
         if year and (int(year) < 0):
             raise serializers.ValidationError("Year should be greater than 0")
 
@@ -70,6 +80,13 @@ class UserSerializer(serializers.ModelSerializer):
             university = for_profile_data.get('university')
         else:
             university = ""
+
+        if for_profile_data.get('accepted'):
+            if for_profile_data.get('accepted') == "false" or "False":
+                accepted = False
+        else:
+            accepted = True
+
         if for_profile_data.get('company'):
             company = for_profile_data.get('company')
         else:
@@ -80,7 +97,7 @@ class UserSerializer(serializers.ModelSerializer):
             year = None
 
         if for_profile_data.get('role') == ('participant'):
-            ParticipantsProfile.objects.create(user=user, university=university)
+            ParticipantsProfile.objects.create(user=user, university=university, accepted=accepted)
 
         elif for_profile_data.get('role') == ('instructor'):
             InstructorProfile.objects.create(user=user, company=company, year=year)
@@ -88,17 +105,28 @@ class UserSerializer(serializers.ModelSerializer):
 
         return user
 
-    def get_participants(self, user):
+    def get_participant(self, user):
         self.context['user'] = user
         from seminar.serializers import ParticipantsProfileSerializer
-        return ParticipantsProfileSerializer(user.participants.all(), context=self.context,
-                                             many=True).data if user.participants.all() else None
+        if user.participants.all():
+            serializer = ParticipantsProfileSerializer(user.participants.all(), context=self.context, many=True)
+            return serializer.data[0]
+        else:
+            return None
+
+        #return ParticipantsProfileSerializer(user.participants.all(), context=self.context, many=True #.all()
+        #                                     ).data if user.participants.all() else None
 
     def get_instructor(self, user):
         self.context['user'] = user
         from seminar.serializers import InstructorProfileSerializer
-        return InstructorProfileSerializer(user.instructor.all(), context=self.context,
-                                           many=True).data if user.instructor.all() else None
+        if user.instructor.all():
+            serializer = InstructorProfileSerializer(user.instructor.all(), context=self.context, many=True)
+            return serializer.data[0]
+        else:
+            return None
+        #return InstructorProfileSerializer(user.instructor.all(), context=self.context,
+        #                                   many=True).data if user.instructor.all() else None
 
     def update(self, data):  # 이미 validate 거친 data이다.
 
@@ -109,6 +137,8 @@ class UserSerializer(serializers.ModelSerializer):
             user.last_name = data.get('last_name')
         if data.get('username'):
             user.username = data.get('username')
+        if data.get('email'):
+            user.email = data.get('email')
 
         # 유저와 관련된 참여자 / 진행자 프로필 받아오기.
         try:

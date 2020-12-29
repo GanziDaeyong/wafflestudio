@@ -3,7 +3,7 @@ from seminar.seminar_models import Seminar
 from seminar.profile_models import ParticipantsProfile, InstructorProfile
 from user.mini_serializers import MiniUserSerializer, MiniUserSerializerForParticipants
 from seminar.relation_models import UserSeminar
-import datetime
+from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 
 
@@ -31,10 +31,12 @@ class ParticipantsProfileSerializer(serializers.ModelSerializer):
         except:
             pass
         if sw == 0:
-            return None
+            return []
 
         rstlist = []
-        rst = UserSeminar.objects.filter(user_id=user.id)
+
+        rst = UserSeminar.objects.filter(user_id=user.id).filter(role="participant")
+
         for query in rst:
             rstlist.append(query.seminar)
         return MiniSeminarSerializerForUser(rstlist, context=self.context, many=True).data
@@ -56,8 +58,11 @@ class InstructorProfileSerializer(serializers.ModelSerializer):
         from seminar.mini_serializers import MiniSeminarSerializerForUserForInstructor
         user = self.context['user']
         self.context['user'] = user
+        rst = UserSeminar.objects.filter(user_id=user.id).filter(role='instructor')  # 얘는 뭐가됐던 일단 가져옴. 없으면 빈 리스트 에러발생X
+        if rst.count() == 0:
+            return None
+
         rstlist = []
-        rst = UserSeminar.objects.filter(user_id=user.id).filter(role='instructor')
         for query in rst:
             rstlist.append(query.seminar)
         return MiniSeminarSerializerForUserForInstructor(rstlist, context=self.context, many=True).data
@@ -65,7 +70,7 @@ class InstructorProfileSerializer(serializers.ModelSerializer):
 
 class SeminarSerializer(serializers.ModelSerializer):
     participants = serializers.SerializerMethodField()
-    instructor = serializers.SerializerMethodField()
+    instructors = serializers.SerializerMethodField()
 
     class Meta:
         model = Seminar
@@ -76,7 +81,7 @@ class SeminarSerializer(serializers.ModelSerializer):
             'count',
             'time',
             'online',
-            'instructor',
+            'instructors',
             'participants',
         )
 
@@ -86,6 +91,7 @@ class SeminarSerializer(serializers.ModelSerializer):
         capacity = data.get('capacity')
         count = data.get('count')
         time = data.get('time')
+        online = data.get('online')
 
         if not (name and capacity and count and time):
             raise serializers.ValidationError("required data : name / capacity / count / time")
@@ -94,9 +100,12 @@ class SeminarSerializer(serializers.ModelSerializer):
         if int(capacity) <= 0 or int(count) <= 0:
             raise serializers.ValidationError("capacity and count should be greater than 0.")
         # online의 경우 BooleanField가 허용하는 기본 값 사용하였다.
+
+        """
         time = str(time) # 시간의 경우도, TimeField가 허용하는 값에 글자수 제한을 두어 시:분 만 가능하도록 했다.
-        if len(time) > 5:
+        if len(time) > 8:
             raise serializers.ValidationError("enter right form of time ex: 12:30 ")
+        """
 
         return data
 
@@ -109,7 +118,9 @@ class SeminarSerializer(serializers.ModelSerializer):
         return seminar
 
     def update(self, pk, data):
+
         seminar = Seminar.objects.get(id=pk)
+
         if data.get('name'):
             seminar.name = data['name']
         if data.get('count'):
@@ -122,7 +133,7 @@ class SeminarSerializer(serializers.ModelSerializer):
             seminar.capacity = data['capacity']
         if data.get('time'):
             seminar.time = data['time']
-        if data.get('online'):
+        if data.get('online') != None:
             seminar.online = data['online']
 
         seminar.save()
@@ -151,11 +162,12 @@ class SeminarSerializer(serializers.ModelSerializer):
             if UserSeminar.objects.filter(seminar_id=pk).filter(role='participant').count() >= seminar.capacity:
                 raise serializers.ValidationError("this seminar is full already.")
             try:
-                ParticipantsProfile.objects.get(user_id=user.id)
-                if ParticipantsProfile.objects.get(user_id=user.id).accepted == False:
-                    raise PermissionDenied()
+                if ParticipantsProfile.objects.get(user_id=user.id).accepted == True:
+                    pass
+                else:
+                    raise PermissionDenied
             except:
-                raise PermissionDenied()
+                raise PermissionDenied
 
         elif role == 'instructor':
             if UserSeminar.objects.filter(user_id=user.id).filter(role='instructor'):
@@ -171,18 +183,23 @@ class SeminarSerializer(serializers.ModelSerializer):
         relation.save()
 
     def delete(self, seminar, user):
+
         try:
             profile = UserSeminar.objects.filter(seminar_id=seminar.id).get(user_id=user.id)
-            if profile.role == 'instructor':
-                raise PermissionDenied()
         except:
-            pass
+            raise serializers.ValidationError("you are not the participant of this seminar")
+
+        if profile.role == 'instructor':
+            raise PermissionDenied()
+
+        if profile.is_active == False:
+            raise serializers.ValidationError("you already dropped from this seminar")
 
         profile.is_active = False
-        profile.dropped_at = datetime.datetime.now()
+        profile.dropped_at = timezone.now()
         profile.save()
 
-    def get_instructor(self, seminar):
+    def get_instructors(self, seminar):
         try:
             seminar.id  # (처음생성하는 경우. )
         except:
@@ -194,6 +211,7 @@ class SeminarSerializer(serializers.ModelSerializer):
         rstlist = []
         for query in rst:
             rstlist.append(query.user)
+
         return MiniUserSerializer(rstlist, many=True, context=self.context).data
 
     def get_participants(self, seminar):

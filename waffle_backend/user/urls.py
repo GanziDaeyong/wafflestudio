@@ -10,3 +10,4 @@ router.register('user', UserViewSet, basename='user')  # /api/v1/user/
 urlpatterns = [
     path('', include((router.urls))),
 ]
+

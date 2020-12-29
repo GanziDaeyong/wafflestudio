@@ -24,12 +24,16 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 SECRET_KEY = '0^k@b1ln%g7l_*6xr*&5&vhgp7r$i&n-db#_!(8*a$n2y1hf4='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
+DEBUG = False
+#DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True')
 
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = [ 
+        '15.164.98.32',
+        'localhost',
+        '127.0.0.1',
+        'www.waffle-backend-ganzidaeyong.shop',
+        'ec2-15-164-98-32.ap-northeast-2.compute.amazonaws.com',
+        ]
 # Application definition
 
 INSTALLED_APPS = [
@@ -43,6 +47,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'survey.apps.SurveyConfig',
     'user.apps.UserConfig',
+    'seminar.apps.SeminarConfig',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 REST_FRAMEWORK = {
@@ -60,11 +67,13 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     )
 }
-
+"""
 if DEBUG_TOOLBAR:
     INSTALLED_APPS.append('debug_toolbar')
     MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
     INTERNAL_IPS = ('127.0.0.1',)
+"""
+INTERNAL_IPS = ('127.0.0.1',)
 
 ROOT_URLCONF = 'waffle_backend.urls'
 
@@ -93,7 +102,7 @@ WSGI_APPLICATION = 'waffle_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'HOST': 'localhost',
+        'HOST': 'waffle-backend.cwybyntak1ph.ap-northeast-2.rds.amazonaws.com',
         'PORT': 3306,
         'NAME': 'waffle_backend_assignment_2',
         'USER': 'waffle-backend',
@@ -101,6 +110,16 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": { #redis cache를 쓰겠다. - redis에서는 6379가 베이스이다.
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/3",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -139,3 +158,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
